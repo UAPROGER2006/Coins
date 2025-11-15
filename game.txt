@@ -1,0 +1,110 @@
+let player, chaser, coin;
+let score = 0;
+let gameOver = false;
+let coinSound;
+
+function setup() {
+  createCanvas(640, 360);
+  player = createVector(100, height/2);
+  chaser = createVector(width-100, height/2);
+  coin = createVector(random(20, width-20), random(20, height-20));
+
+  // Створюємо звук без preload
+  coinSound = new p5.Oscillator('sine');
+  coinSound.start();
+  coinSound.amp(0); // початково беззвучний
+}
+
+function draw() {
+  background(20);
+
+  if (!gameOver) {
+    updatePlayer();
+    updateChaser();
+    checkCollisions();
+  }
+
+  // Монета
+  fill(255, 204, 0);
+  ellipse(coin.x, coin.y, 16);
+
+  // Гравець
+  fill(50, 150, 255);
+  ellipse(player.x, player.y, 24);
+
+  // Ворог
+  fill(255, 50, 50);
+  ellipse(chaser.x, chaser.y, 24);
+
+  // HUD
+  fill(220);
+  textSize(16);
+  textAlign(LEFT);
+  text("Очки: " + score, 10, 20);
+  text("Швидкість ворога: " + chaserSpeed().toFixed(0) + " px/сек", 10, 40);
+
+  if (gameOver) {
+    textAlign(CENTER);
+    textSize(28);
+    fill(255);
+    text("GAME OVER", width/2, height/2 - 10);
+    textSize(16);
+    text("Натисни R для перезапуску", width/2, height/2 + 20);
+  }
+}
+
+function updatePlayer() {
+  let speed = 200 / frameRate();
+  if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) player.x -= speed;
+  if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) player.x += speed;
+  if (keyIsDown(UP_ARROW) || keyIsDown(87)) player.y -= speed;
+  if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) player.y += speed;
+
+  player.x = constrain(player.x, 12, width-12);
+  player.y = constrain(player.y, 12, height-12);
+}
+
+function updateChaser() {
+  let speed = chaserSpeed() / frameRate();
+  let dir = p5.Vector.sub(player, chaser);
+  dir.normalize();
+  chaser.add(dir.mult(speed));
+}
+
+function chaserSpeed() {
+  let bonus = floor(score / 5) * 10;
+  return 120 + bonus;
+}
+
+function checkCollisions() {
+  // Збір монети
+  if (dist(player.x, player.y, coin.x, coin.y) < 20) {
+    score++;
+    coin = createVector(random(20, width-20), random(20, height-20));
+    playCoinSound();
+  }
+  // Зіткнення з ворогом
+  if (dist(player.x, player.y, chaser.x, chaser.y) < 24) {
+    gameOver = true;
+  }
+}
+
+function playCoinSound() {
+  coinSound.freq(800);
+  coinSound.amp(0.3, 0.05);
+  setTimeout(() => coinSound.amp(0, 0.2), 100);
+}
+
+function keyPressed() {
+  if (gameOver && key === 'r') {
+    resetGame();
+  }
+}
+
+function resetGame() {
+  score = 0;
+  gameOver = false;
+  player.set(100, height/2);
+  chaser.set(width-100, height/2);
+  coin.set(random(20, width-20), random(20, height-20));
+}
